@@ -71,7 +71,7 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 PhotoGallery Server running at http://localhost:${PORT}`);
-    console.log(`📸 Photographer Login: http://localhost:${PORT}/login`);
+    console.log(`\n🚀 PhotoGallery Server running at ${BASE_URL}`);
+    console.log(`📸 Photographer Login: ${BASE_URL}/login`);
     console.log(`🔑 Admin Login: admin@photogallery.com / admin123\n`);
 });
