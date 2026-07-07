@@ -209,7 +209,7 @@ router.get('/:id/qrcode', authenticateToken, requirePhotographer, async(req, res
     const folder = db.prepare('SELECT * FROM folders WHERE id = ? AND photographer_id = ?').get(req.params.id, req.user.id);
     if (!folder) return res.status(404).json({ error: 'Folder not found.' });
 
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`;
     const shareUrl = `${baseUrl}/gallery/${folder.share_token}`;
     try {
         const qrDataUrl = await QRCode.toDataURL(shareUrl, { width: 300, margin: 2 });
