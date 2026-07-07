@@ -38,6 +38,12 @@ router.post('/', authenticateToken, requirePhotographer, (req, res) => {
     try {
         const { client_name, client_email } = req.body;
         if (!client_name) return res.status(400).json({ error: 'Client name is required.' });
+
+        const photographer = db.prepare('SELECT id FROM users WHERE id = ? AND role = ?').get(req.user.id, 'photographer');
+        if (!photographer) {
+            return res.status(404).json({ error: 'Photographer account not found. Please log in again.' });
+        }
+
         const token = uuidv4();
         const result = db.prepare(
             'INSERT INTO folders (photographer_id, client_name, client_email, share_token) VALUES (?, ?, ?, ?)'
