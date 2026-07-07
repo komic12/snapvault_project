@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { verifyFirebaseToken, firebaseInitialized } = require('../firebase-admin');
 const { createClient } = require('@supabase/supabase-js');
 const JWT_SECRET = process.env.JWT_SECRET || 'photogallery_secret_2024';
 
@@ -13,18 +14,35 @@ async function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
     const queryToken = req.query && req.query.token;
-    if (!token && queryToken) {
-        token = queryToken;
-    }
-    if (!token) {
-        console.log(`Auth failed: no token. authHeader=${authHeader}, queryToken=${queryToken}, url=${req.originalUrl}`);
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
+    if (!token && queryToken) token = queryToken;
+    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+    // Prefer Firebase ID tokens when Firebase admin is configured
+    if (firebaseInitialized) {
+        try {
+            const decoded = await verifyFirebaseToken(token);
+            // decoded contains uid, email, and custom claims
+            req.user = {
+                id: decoded.uid,
+                uid: decoded.uid,
+                email: decoded.email,
+                name: decoded.name || decoded.email || null,
+                role: (decoded.role || decoded.claims && decoded.claims.role) || decoded.role || 'user',
+                firebase: true,
+                claims: decoded
+            };
+            return next();
+        } catch (e) {
+            // Not a valid Firebase token, fall through to other verifiers
+            console.log('Firebase token verify failed:', e && e.message);
+        }
     }
 
+    // Try JWT local tokens
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
-        next();
+        return next();
     } catch (err) {
         // Try Supabase token verification if configured
         if (supabaseAdmin) {
@@ -44,7 +62,6 @@ async function authenticateToken(req, res, next) {
                 console.log('Supabase token verify error', e && e.message);
             }
         }
-        console.log(`Auth failed: invalid token. token=${token}, err=${err.message}`);
         return res.status(403).json({ error: 'Invalid or expired token.' });
     }
 }

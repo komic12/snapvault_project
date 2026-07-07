@@ -1,4 +1,5 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/module/index.js';
+import { auth } from './firebase-config.js';
+import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
 
 const token = localStorage.getItem('token');
 if (token) {
@@ -17,26 +18,7 @@ function resetButton() {
     btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
 }
 
-const SUPABASE_URL = window.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
-const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-async function registerWithSupabase(email, password, metadata = {}) {
-    if (!supabase) return { mode: 'disabled' };
-    // Try sign up
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
-    if (error) {
-        // If email already exists, attempt sign-in to get token
-        if (error.message && error.message.toLowerCase().includes('already')) {
-            const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-            if (!signInErr && signInData && signInData.session) return { mode: 'login', session: signInData.session };
-            return { mode: 'exists' };
-        }
-        throw error;
-    }
-    // On successful sign up, data.user may be available but session may require email confirm
-    return { mode: 'register', data };
-}
+import { saveUserProfile } from './firebase-db.js';
 
 async function backendRegister(firebaseIdToken, payload, password) {
     const res = await fetch('/api/auth/register', {
@@ -65,41 +47,26 @@ async function handleRegister(event) {
     const password = document.getElementById('password').value;
 
     try {
-        // Try Supabase registration/sign-in first
-        if (supabase) {
-            try {
-                const result = await registerWithSupabase(payload.email, password, { name: payload.name, role: 'photographer' });
-                if (result.mode === 'register') {
-                    // Not guaranteed to have session (email confirm flows). Attempt sign-in to obtain token.
-                    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email: payload.email, password });
-                    if (signInErr) throw signInErr;
-                    const accessToken = signInData.session ? .access_token;
-                    const data = await backendRegister(accessToken, payload, password);
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard';
-                    return;
-                } else if (result.mode === 'login') {
-                    const accessToken = result.session.access_token;
-                    const data = await backendRegister(accessToken, payload, password);
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard';
-                    return;
-                } else if (result.mode === 'exists') {
-                    // User exists but could not sign in via supabase (wrong password); fall back to backend-only
-                }
-            } catch (e) {
-                console.warn('Supabase registration failed, falling back to backend', e && e.message);
-            }
-        }
-
-        const data = await backendRegister(null, payload, password);
-        localStorage.setItem('token', data.token);
+        // Use Firebase client to create user
+        const userCredential = await createUserWithEmailAndPassword(auth, payload.email, password);
+        const firebaseUser = userCredential.user;
+        // save profile to realtime db
+        await saveUserProfile(firebaseUser.uid, {
+            name: payload.name,
+            email: payload.email,
+            phone: payload.phone,
+            bio: payload.bio,
+            role: 'photographer'
+        });
+        const firebaseIdToken = await firebaseUser.getIdToken();
+        // Register via backend with firebase token
+        const data = await backendRegister(firebaseIdToken, payload, password);
+        localStorage.setItem('token', firebaseIdToken);
         localStorage.setItem('user', JSON.stringify(data.user));
         window.location.href = '/dashboard';
+        return;
     } catch (err) {
-        showError(err.message || (err.error && err.error.message) || 'Registration failed.');
+        showError(err.message || 'Registration failed.');
         resetButton();
     }
 }

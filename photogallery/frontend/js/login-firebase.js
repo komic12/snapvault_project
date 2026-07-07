@@ -44,45 +44,38 @@ async function handleLogin(event) {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
-    try {
-        // Try Supabase auth first if configured
-        if (supabase) {
-            try {
-                const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({ email, password });
-                if (!signErr && signData && signData.session && signData.session.access_token) {
-                    // send Supabase access token to backend for local JWT issuance
-                    const resp = await fetch('/api/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ supabaseIdToken: signData.session.access_token })
-                    });
-                    const data = await resp.json();
-                    if (!resp.ok) throw new Error(data.error || 'Login failed');
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    if (data.user.role === 'admin') window.location.href = '/admin';
-                    else window.location.href = '/dashboard';
-                    return;
-                }
-            } catch (e) {
-                console.warn('Supabase sign-in failed, falling back to local auth', e && e.message);
-            }
-        }
 
-        const data = await backendLoginByPassword(email, password);
-        localStorage.setItem('token', data.token);
+
+    try {
+        // Use Firebase client auth
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = credential.user;
+        const idToken = await firebaseUser.getIdToken();
+
+        // notify backend and fetch profile
+        const resp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firebaseIdToken: idToken })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Login failed');
+
+        await updateUserLogin(firebaseUser.uid, firebaseUser.email);
+        localStorage.setItem('token', idToken);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        if (data.user.role === 'admin') {
-            window.location.href = '/admin';
-        } else {
-            window.location.href = '/dashboard';
-        }
-    } catch (err) {
-        console.error('Login error:', err);
-        showError(err.message || 'Login failed.');
-        resetButton();
+        if (data.user.role === 'admin') window.location.href = '/admin';
+        else window.location.href = '/dashboard';
+        return;
+    } catch (e) {
+        console.warn('Firebase sign-in failed:', e && e.message);
     }
+} catch (err) {
+    console.error('Login error:', err);
+    showError(err.message || 'Login failed.');
+    resetButton();
+}
 }
 
 function togglePassword(id, btn) {
