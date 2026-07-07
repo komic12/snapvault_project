@@ -28,11 +28,11 @@ async function loginWithFirebase(email, password) {
     };
 }
 
-async function backendLogin(firebaseIdToken) {
+async function backendLogin(firebaseIdToken, email) {
     const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseIdToken })
+        body: JSON.stringify({ firebaseIdToken, email })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed.');
@@ -62,7 +62,7 @@ async function handleLogin(event) {
 
     try {
         const { firebaseIdToken, uid } = await loginWithFirebase(email, password);
-        const data = await backendLogin(firebaseIdToken);
+        const data = await backendLogin(firebaseIdToken, email);
 
         if (uid) {
             updateUserLogin(uid, email).catch(err => console.warn('Realtime DB login event failed:', err));

@@ -1,5 +1,5 @@
 import { auth } from './firebase-config.js';
-import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
 import { saveUserProfile } from './firebase-db.js';
 
 const token = localStorage.getItem('token');
@@ -19,9 +19,17 @@ function resetButton() {
     btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
 }
 
-async function registerWithFirebase(email, password) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+async function registerOrSignInWithFirebase(email, password) {
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        return { mode: 'register', user: userCredential.user };
+    } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            return { mode: 'login', user: userCredential.user };
+        }
+        throw err;
+    }
 }
 
 async function backendRegister(firebaseIdToken, payload, password) {
@@ -52,14 +60,25 @@ async function handleRegister(event) {
 
     let firebaseUser;
     try {
-        firebaseUser = await registerWithFirebase(payload.email, password);
-        await saveUserProfile(firebaseUser.uid, {
-            name: payload.name,
-            email: payload.email,
-            phone: payload.phone,
-            bio: payload.bio,
-            role: 'photographer'
-        });
+        const result = await registerOrSignInWithFirebase(payload.email, password);
+        firebaseUser = result.user;
+        if (result.mode === 'register') {
+            await saveUserProfile(firebaseUser.uid, {
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone,
+                bio: payload.bio,
+                role: 'photographer'
+            });
+        } else {
+            await saveUserProfile(firebaseUser.uid, {
+                name: payload.name || 'Photographer',
+                email: payload.email,
+                phone: payload.phone,
+                bio: payload.bio,
+                role: 'photographer'
+            }).catch(() => {});
+        }
         const firebaseIdToken = await firebaseUser.getIdToken();
         const data = await backendRegister(firebaseIdToken, payload, password);
 
@@ -67,7 +86,7 @@ async function handleRegister(event) {
         localStorage.setItem('user', JSON.stringify(data.user));
         window.location.href = '/dashboard';
     } catch (err) {
-        if (firebaseUser) {
+        if (firebaseUser && err.code !== 'auth/email-already-in-use') {
             try { await firebaseUser.delete(); } catch (_) {}
         }
         showError(err.message);
