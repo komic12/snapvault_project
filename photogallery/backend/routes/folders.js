@@ -35,15 +35,20 @@ const upload = multer({
 
 // Create folder
 router.post('/', authenticateToken, requirePhotographer, (req, res) => {
-    const { client_name, client_email } = req.body;
-    if (!client_name) return res.status(400).json({ error: 'Client name is required.' });
-    const token = uuidv4();
-    const result = db.prepare(
-        'INSERT INTO folders (photographer_id, client_name, client_email, share_token) VALUES (?, ?, ?, ?)'
-    ).run(req.user.id, client_name, client_email || null, token);
+    try {
+        const { client_name, client_email } = req.body;
+        if (!client_name) return res.status(400).json({ error: 'Client name is required.' });
+        const token = uuidv4();
+        const result = db.prepare(
+            'INSERT INTO folders (photographer_id, client_name, client_email, share_token) VALUES (?, ?, ?, ?)'
+        ).run(req.user.id, client_name, client_email || null, token);
 
-    const folder = db.prepare('SELECT * FROM folders WHERE id = ?').get(result.lastInsertRowid);
-    res.json(folder);
+        const folder = db.prepare('SELECT * FROM folders WHERE id = ?').get(result.lastInsertRowid);
+        res.json(folder);
+    } catch (err) {
+        console.error('Create folder error:', err);
+        res.status(500).json({ error: 'Failed to create gallery.', details: err.message || 'Unknown error' });
+    }
 });
 
 async function buildCoverImageUrl(folderId, coverImage) {
