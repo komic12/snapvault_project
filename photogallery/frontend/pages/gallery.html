@@ -577,7 +577,18 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script>
-        const token = location.pathname.split('/').pop();
+        const token = (function() {
+            // Try to get token from last path segment, but handle trailing slashes.
+            const parts = location.pathname.split('/').filter(p => p && p.trim().length > 0);
+            const last = parts.length ? parts[parts.length - 1] : null;
+            if (last && last !== 'gallery' && last !== 'g') return last;
+            // Fallback to query param ?token=...
+            try {
+                const qp = new URLSearchParams(location.search).get('token');
+                if (qp) return qp;
+            } catch (e) {}
+            return last || null;
+        })();
         let currentImages = [];
         let lbIndex = 0;
         let selectedRating = 0;
@@ -723,11 +734,14 @@
     });
 
     async function downloadImage(imageId, name) {
-      showToast(`Downloading ${name}...`, 'info');
-      const link = document.createElement('a');
-      link.href = `/api/gallery/${token}/image/${imageId}`;
-      link.download = name;
-      link.click();
+            if (!token) { showToast('Gallery token not found. Cannot download.', 'error'); return; }
+            showToast(`Downloading ${name}...`, 'info');
+            const img = currentImages.find(i => i.id === imageId);
+            const link = document.createElement('a');
+            // Prefer image-provided URL (may be a signed URL or static upload path)
+            link.href = img && img.url ? img.url : `/api/gallery/${token}/image/${imageId}`;
+            link.download = name;
+            link.click();
       // Update UI
       setTimeout(() => {
         const img = currentImages.find(i => i.id === imageId);
@@ -740,22 +754,44 @@
     }
 
     async function downloadAll() {
-      const btn = document.getElementById('download-all-btn');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing ZIP...';
-      btn.disabled = true;
-      showToast('Preparing your photos for download...', 'info');
-      const link = document.createElement('a');
-      link.href = `/api/gallery/${token}/download-all`;
-      link.click();
-      setTimeout(() => {
-        btn.innerHTML = '<i class="fas fa-download"></i> Download All Photos';
-        btn.disabled = false;
-        currentImages.forEach(i => i.is_downloaded = true);
-        renderGallery();
-        document.getElementById('stat-downloaded').textContent = currentImages.length;
-        document.getElementById('stat-remaining').textContent = 0;
-        showToast('All photos downloaded!', 'success');
-      }, 3000);
+            if (!token) { showToast('Gallery token not found. Cannot prepare download.', 'error'); return; }
+            const btn = document.getElementById('download-all-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing ZIP...';
+            btn.disabled = true;
+            showToast('Preparing your photos for download...', 'info');
+            
+            // Try server ZIP endpoint first; if it fails (404/500) fall back to individual downloads
+            try {
+                const zipRes = await fetch(`/api/gallery/${token}/download-all`, { method: 'GET' });
+                if (zipRes.ok) {
+                    const link = document.createElement('a');
+                    link.href = `/api/gallery/${token}/download-all`;
+                    link.click();
+                    showToast('Downloading ZIP...', 'success');
+                } else {
+                    throw new Error('Server ZIP unavailable');
+                }
+            } catch (e) {
+                // Fallback: trigger browser downloads for each image URL
+                showToast('Server ZIP unavailable — falling back to individual downloads.', 'info');
+                for (const img of currentImages) {
+                    try {
+                        const link = document.createElement('a');
+                        link.href = img && img.url ? img.url : `/api/gallery/${token}/image/${img.id}`;
+                        link.download = img.original_name || img.filename || 'photo';
+                        link.click();
+                    } catch (err) {}
+                }
+            }
+
+      // Update UI after attempting downloads
+      btn.innerHTML = '<i class="fas fa-download"></i> Download All Photos';
+      btn.disabled = false;
+      currentImages.forEach(i => i.is_downloaded = true);
+      renderGallery();
+      document.getElementById('stat-downloaded').textContent = currentImages.length;
+      document.getElementById('stat-remaining').textContent = 0;
+      showToast('Download attempt finished.', 'success');
     }
 
     // Star rating
@@ -779,31 +815,39 @@
     });
 
     async function submitRating() {
-      if (!selectedRating) return;
-      const btn = document.getElementById('rating-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-      const review = document.getElementById('review-text').value;
-      try {
-        const res = await fetch(`/api/gallery/${token}/rate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rating: selectedRating, review })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        document.getElementById('rating-content').innerHTML = `
-          <div style="padding:20px">
-            <div style="font-size:3rem;margin-bottom:12px">${'★'.repeat(selectedRating)}</div>
-            <h3 style="color:white;margin-bottom:8px">Thank you! 🙏</h3>
-            <p style="color:rgba(255,255,255,0.5)">Your ${selectedRating}-star rating has been submitted.</p>
-          </div>`;
-        showToast('Rating submitted! Thank you!', 'success');
-      } catch (e) {
-        showToast(e.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Rating';
-      }
+                        if (!selectedRating) return;
+                        if (!token) { showToast('Gallery token not found. Cannot submit rating.', 'error'); return; }
+            const btn = document.getElementById('rating-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            const review = document.getElementById('review-text').value;
+            try {
+                const res = await fetch(`/api/gallery/${token}/rate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rating: selectedRating, review })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const msg = data && data.error ? data.error : `Server error (${res.status}).`;
+                    throw new Error(msg);
+                }
+                document.getElementById('rating-content').innerHTML = `
+                    <div style="padding:20px">
+                        <div style="font-size:3rem;margin-bottom:12px">${'★'.repeat(selectedRating)}</div>
+                        <h3 style="color:white;margin-bottom:8px">Thank you! 🙏</h3>
+                        <p style="color:rgba(255,255,255,0.5)">Your ${selectedRating}-star rating has been submitted.</p>
+                    </div>`;
+                showToast('Rating submitted! Thank you!', 'success');
+            } catch (e) {
+                if (e.message && e.message.toLowerCase().includes('gallery not found')) {
+                    showToast('Unable to submit rating: gallery not found on server. Try again later.', 'error');
+                } else {
+                    showToast(e.message || 'Failed to submit rating.', 'error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Rating';
+            }
     }
 
     function showToast(msg, type = 'info') {

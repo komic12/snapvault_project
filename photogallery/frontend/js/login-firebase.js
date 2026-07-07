@@ -1,11 +1,15 @@
-import { auth } from './firebase-config.js';
 import { updateUserLogin } from './firebase-db.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/module/index.js';
 
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 if (token) {
     window.location.href = user.role === 'admin' ? '/admin' : '/dashboard';
 }
+
+const SUPABASE_URL = window.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 function showError(message) {
     document.getElementById('alert-container').innerHTML = `
@@ -41,6 +45,30 @@ async function handleLogin(event) {
     const password = document.getElementById('password').value;
 
     try {
+        // Try Supabase auth first if configured
+        if (supabase) {
+            try {
+                const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({ email, password });
+                if (!signErr && signData && signData.session && signData.session.access_token) {
+                    // send Supabase access token to backend for local JWT issuance
+                    const resp = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ supabaseIdToken: signData.session.access_token })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) throw new Error(data.error || 'Login failed');
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    if (data.user.role === 'admin') window.location.href = '/admin';
+                    else window.location.href = '/dashboard';
+                    return;
+                }
+            } catch (e) {
+                console.warn('Supabase sign-in failed, falling back to local auth', e && e.message);
+            }
+        }
+
         const data = await backendLoginByPassword(email, password);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));

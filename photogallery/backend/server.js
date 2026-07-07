@@ -38,6 +38,14 @@ app.get('/gallery/:token', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/pages/gallery.html'));
 });
 
+// Serve Supabase config for client (populated from environment)
+app.get('/supabase-config.js', (req, res) => {
+    res.type('application/javascript');
+    const url = process.env.SUPABASE_URL || '';
+    const anon = process.env.SUPABASE_ANON_KEY || '';
+    res.send(`window.SUPABASE_URL = ${JSON.stringify(url)}; window.SUPABASE_ANON_KEY = ${JSON.stringify(anon)};`);
+});
+
 // Serve frontend pages
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/dashboard.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin.html')));

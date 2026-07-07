@@ -3,8 +3,25 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../database');
+const { createClient } = require('@supabase/supabase-js');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'photogallery_secret_2024';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabaseAdmin = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && SUPABASE_SERVICE_ROLE_KEY !== 'your-service-role-key') {
+    supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function verifySupabaseToken(token) {
+    if (!supabaseAdmin) return null;
+    try {
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+        if (error || !data || !data.user) return null;
+        return data.user;
+    } catch (e) { return null; }
+}
 
 function normalizeEmail(value) {
     return (value || '').trim().toLowerCase();
@@ -31,6 +48,19 @@ function createLocalUser(name, email, password, phone, bio) {
 // Register
 router.post('/register', async(req, res) => {
     const { name, email, password, phone, bio } = req.body;
+    // Support registration via Supabase token (frontend may signUp and pass token)
+    const supabaseIdToken = req.body.supabaseIdToken || null;
+    if (supabaseIdToken) {
+        const supaUser = await verifySupabaseToken(supabaseIdToken);
+        if (!supaUser) return res.status(401).json({ error: 'Invalid Supabase token.' });
+        const emailFromSupa = supaUser.email;
+        const nameFromSupa = (supaUser.user_metadata && supaUser.user_metadata.name) || name || 'User';
+        // create local user with random password (Supabase will handle auth)
+        const randPass = Math.random().toString(36).slice(2, 12);
+        const user = createLocalUser(nameFromSupa, emailFromSupa, randPass, phone, bio);
+        const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    }
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: 'Name, email, and password are required.' });
@@ -50,6 +80,21 @@ router.post('/register', async(req, res) => {
 // Login
 router.post('/login', async(req, res) => {
     const { email, password } = req.body;
+    // Support login via Supabase token from frontend
+    const supabaseIdToken = req.body.supabaseIdToken || null;
+    if (supabaseIdToken) {
+        const supaUser = await verifySupabaseToken(supabaseIdToken);
+        if (!supaUser) return res.status(401).json({ error: 'Invalid Supabase token.' });
+        const normalizedEmail = normalizeEmail(supaUser.email);
+        let user = getUserByEmail(normalizedEmail);
+        if (!user) {
+            // create local profile if missing
+            const randPass = Math.random().toString(36).slice(2, 12);
+            user = createLocalUser((supaUser.user_metadata && supaUser.user_metadata.name) || 'User', supaUser.email, randPass);
+        }
+        const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    }
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required.' });
