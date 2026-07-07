@@ -1,5 +1,4 @@
 import { auth } from './firebase-config.js';
-import { signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
 import { updateUserLogin } from './firebase-db.js';
 
 const token = localStorage.getItem('token');
@@ -18,25 +17,6 @@ function resetButton() {
     const btn = document.getElementById('login-btn');
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
-}
-
-async function loginWithFirebase(email, password) {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return {
-        firebaseIdToken: await userCredential.user.getIdToken(),
-        uid: userCredential.user.uid
-    };
-}
-
-async function backendLogin(firebaseIdToken, email) {
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseIdToken, email })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed.');
-    return data;
 }
 
 async function backendLoginByPassword(email, password) {
@@ -61,13 +41,7 @@ async function handleLogin(event) {
     const password = document.getElementById('password').value;
 
     try {
-        const { firebaseIdToken, uid } = await loginWithFirebase(email, password);
-        const data = await backendLogin(firebaseIdToken, email);
-
-        if (uid) {
-            updateUserLogin(uid, email).catch(err => console.warn('Realtime DB login event failed:', err));
-        }
-
+        const data = await backendLoginByPassword(email, password);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
@@ -77,26 +51,7 @@ async function handleLogin(event) {
             window.location.href = '/dashboard';
         }
     } catch (err) {
-        console.error('Firebase login error:', err);
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-email' || err.code === 'auth/invalid-login-credentials') {
-            try {
-                const data = await backendLoginByPassword(email, password);
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                if (data.user.role === 'admin') {
-                    window.location.href = '/admin';
-                } else {
-                    window.location.href = '/dashboard';
-                }
-                return;
-            } catch (fallbackErr) {
-                showError(fallbackErr.message);
-                resetButton();
-                return;
-            }
-        }
-
+        console.error('Login error:', err);
         showError(err.message || 'Login failed.');
         resetButton();
     }
