@@ -1,0 +1,66 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const path = require('path');
+const fs = require('fs');
+const db = require('./database');
+const { initSupabase } = require('./supabase');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Security & middleware
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve frontend
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// API Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/folders', require('./routes/folders'));
+app.use('/api/gallery', require('./routes/gallery'));
+app.use('/api/admin', require('./routes/admin'));
+
+initSupabase();
+
+// Serve gallery page for share links
+app.get('/gallery/:token', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/pages/gallery.html'));
+});
+
+// Serve frontend pages
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/dashboard.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/login.html')));
+app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/register.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
+
+// 30-day reminder check (runs every hour)
+setInterval(() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const oldFolders = db.prepare(`
+    SELECT f.*, u.email as photographer_email, u.name as photographer_name
+    FROM folders f JOIN users u ON f.photographer_id = u.id
+    WHERE f.is_deleted = 0 AND f.reminder_sent = 0
+    AND f.created_at < ? 
+    AND (SELECT COUNT(*) FROM images WHERE folder_id = f.id AND is_downloaded = 0) > 0
+  `).all(thirtyDaysAgo);
+
+    for (const folder of oldFolders) {
+        console.log(`[REMINDER] Folder "${folder.client_name}" (ID: ${folder.id}) by ${folder.photographer_name} has undownloaded images older than 30 days.`);
+        db.prepare('UPDATE folders SET reminder_sent = 1 WHERE id = ?').run(folder.id);
+    }
+}, 60 * 60 * 1000);
+
+app.listen(PORT, () => {
+    console.log(`\n🚀 PhotoGallery Server running at http://localhost:${PORT}`);
+    console.log(`📸 Photographer Login: http://localhost:${PORT}/login`);
+    console.log(`🔑 Admin Login: admin@photogallery.com / admin123\n`);
+});

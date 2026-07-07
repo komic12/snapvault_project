@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — SnapVault</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .auth-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            max-width: 960px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+        }
+        
+        .auth-left {
+            background: linear-gradient(135deg, #6C63FF, #0F3460);
+            padding: 60px 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .auth-left::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            bottom: -100px;
+            right: -100px;
+        }
+        
+        .auth-left::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            top: -60px;
+            left: -60px;
+        }
+        
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 800;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .auth-brand .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .auth-left-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .auth-left-content h2 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+        
+        .auth-left-content p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.8;
+        }
+        
+        .auth-features {
+            list-style: none;
+            margin-top: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        
+        .auth-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.9rem;
+        }
+        
+        .auth-features li .check {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        
+        .auth-right {
+            padding: 60px 48px;
+        }
+        
+        .auth-right h1 {
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+        
+        .auth-right .subtitle {
+            color: var(--text-light);
+            margin-bottom: 36px;
+            font-size: 0.95rem;
+        }
+        
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        
+        .auth-divider span {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        
+        @media (max-width: 768px) {
+            .auth-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .auth-left {
+                display: none;
+            }
+            .auth-right {
+                padding: 40px 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-left">
+            <div class="auth-brand">
+                <div class="logo-icon">📸</div>
+                SnapVault
+            </div>
+            <div class="auth-left-content">
+                <h2>Welcome Back, Photographer!</h2>
+                <p>Sign in to manage your client galleries, track your performance, and grow your photography business.</p>
+                <ul class="auth-features">
+                    <li>
+                        <div class="check">✓</div> Create & share client galleries</li>
+                    <li>
+                        <div class="check">✓</div> Generate QR codes instantly</li>
+                    <li>
+                        <div class="check">✓</div> Track downloads & ratings</li>
+                    <li>
+                        <div class="check">✓</div> View performance analytics</li>
+                </ul>
+            </div>
+            <div style="color:rgba(255,255,255,0.4);font-size:0.8rem;position:relative;z-index:1">
+                © 2026 SnapVault
+            </div>
+        </div>
+        <div class="auth-right">
+            <h1>Sign In</h1>
+            <p class="subtitle">Enter your credentials to access your dashboard</p>
+
+            <div id="alert-container"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="email" class="form-control" placeholder="you@example.com" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" class="form-control" placeholder="Enter your password" required />
+                        <button type="button" onclick="togglePassword('password', this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted)">
+              <i class="fas fa-eye"></i>
+            </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+            </form>
+
+
+
+            <div class="auth-footer">
+                Don't have an account? <a href="/register" style="font-weight:600">Create one free</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/login-firebase.js"></script>
+</body>
+
+</html>

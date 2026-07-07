@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Photos — SnapVault</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            background: #0F0F1A;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .gallery-hero {
+            background: linear-gradient(135deg, #1A1A2E, #16213E, #0F3460);
+            padding: 60px 24px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gallery-hero::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.12) 0%, transparent 70%);
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+        }
+        
+        .gallery-hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .photographer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .photographer-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6C63FF, #FF6584);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+        
+        .gallery-hero h1 {
+            color: white;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            margin-bottom: 12px;
+        }
+        
+        .gallery-hero p {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 28px;
+        }
+        
+        .gallery-stats {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+        
+        .gallery-stat {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 20px;
+            text-align: center;
+        }
+        
+        .gallery-stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+        }
+        
+        .gallery-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+        
+        .download-all-btn {
+            background: linear-gradient(135deg, #6C63FF, #FF6584);
+            color: white;
+            border: none;
+            padding: 18px 48px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(108, 99, 255, 0.4);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .download-all-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(108, 99, 255, 0.5);
+        }
+        
+        .gallery-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            background: #1A1A2E;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        
+        .gallery-item:hover img {
+            transform: scale(1.06);
+        }
+        
+        .gallery-item-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 16px;
+        }
+        
+        .gallery-item:hover .gallery-item-overlay {
+            opacity: 1;
+        }
+        
+        .gallery-item-name {
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .gallery-item-download {
+            background: white;
+            color: #1A1A2E;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            width: fit-content;
+        }
+        
+        .gallery-item-download:hover {
+            background: #6C63FF;
+            color: white;
+        }
+        
+        .downloaded-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #43D9AD;
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            box-shadow: 0 2px 8px rgba(67, 217, 173, 0.5);
+        }
+        
+        .first-image-notice {
+            background: linear-gradient(135deg, rgba(108, 99, 255, 0.15), rgba(255, 101, 132, 0.15));
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .first-image-notice h3 {
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .first-image-notice p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+        
+        .rating-section {
+            background: linear-gradient(135deg, #1A1A2E, #16213E);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 48px 32px;
+            text-align: center;
+            margin-top: 48px;
+        }
+        
+        .rating-section h2 {
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .rating-section p {
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 32px;
+        }
+        
+        .star-rating-large {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        
+        .star-large {
+            font-size: 3rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+        
+        .star-large.active,
+        .star-large:hover {
+            color: #F6C90E;
+            transform: scale(1.1);
+        }
+        
+        .rating-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .rating-form textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+        
+        .rating-form textarea:focus {
+            border-color: #6C63FF;
+        }
+        
+        .rating-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .rating-submit {
+            background: linear-gradient(135deg, #F6C90E, #FF9F43);
+            color: #1A1A2E;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .rating-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(246, 201, 14, 0.4);
+        }
+        
+        .lightbox-client {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .lightbox-client.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .lightbox-client img {
+            max-width: 90vw;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .lb-close,
+        .lb-nav {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+        
+        .lb-close:hover,
+        .lb-nav:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .lb-close {
+            top: 20px;
+            right: 20px;
+        }
+        
+        .lb-prev {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .lb-next {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .lb-download {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #6C63FF, #FF6584);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .lb-download:hover {
+            transform: translateX(-50%) translateY(-2px);
+        }
+        
+        .lb-info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        .navbar-client {
+            background: rgba(15, 15, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .navbar-client .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-weight: 800;
+            font-size: 1.1rem;
+            text-decoration: none;
+        }
+        
+        .navbar-client .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6C63FF, #FF6584);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 600px) {
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .download-all-btn {
+                padding: 14px 28px;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar-client">
+        <a href="/" class="brand">
+            <div class="logo-icon">📸</div>
+            SnapVault
+        </a>
+        <div style="color:rgba(255,255,255,0.4);font-size:0.8rem">Secure Gallery</div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading-state" style="min-height:80vh;display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center">
+            <div class="spinner" style="margin:0 auto 16px;border-color:rgba(255,255,255,0.1);border-top-color:#6C63FF"></div>
+            <p style="color:rgba(255,255,255,0.5)">Loading your gallery...</p>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden" style="min-height:80vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px">
+        <div>
+            <div style="font-size:4rem;margin-bottom:20px">😕</div>
+            <h2 style="color:white;margin-bottom:12px">Gallery Not Found</h2>
+            <p style="color:rgba(255,255,255,0.5)" id="error-msg">This gallery link is invalid or has been removed.</p>
+        </div>
+    </div>
+
+    <!-- Gallery Content -->
+    <div id="gallery-content" class="hidden">
+        <!-- Hero -->
+        <div class="gallery-hero">
+            <div class="gallery-hero-content">
+                <div class="photographer-badge">
+                    <div class="photographer-avatar" id="photo-avatar">P</div>
+                    <span>Photos by <strong id="photo-name">Photographer</strong></span>
+                    <span id="photo-rating-badge" style="display:none;background:rgba(246,201,14,0.2);padding:3px 10px;border-radius:20px;font-size:0.8rem;color:#F6C90E"></span>
+                </div>
+                <h1 id="gallery-title">Your Photos Are Ready! 🎉</h1>
+                <p id="gallery-subtitle">Click on any photo to view it full size, then download your favorites.</p>
+                <div class="gallery-stats">
+                    <div class="gallery-stat">
+                        <div class="gallery-stat-value" id="stat-total">0</div>
+                        <div class="gallery-stat-label">Total Photos</div>
+                    </div>
+                    <div class="gallery-stat">
+                        <div class="gallery-stat-value" id="stat-downloaded">0</div>
+                        <div class="gallery-stat-label">Downloaded</div>
+                    </div>
+                    <div class="gallery-stat">
+                        <div class="gallery-stat-value" id="stat-remaining">0</div>
+                        <div class="gallery-stat-label">Remaining</div>
+                    </div>
+                </div>
+                <button class="download-all-btn" onclick="downloadAll()" id="download-all-btn">
+          <i class="fas fa-download"></i> Download All Photos
+        </button>
+            </div>
+        </div>
+
+        <!-- Gallery Grid -->
+        <div class="gallery-main">
+            <div class="first-image-notice" id="first-notice">
+                <h3>👇 Your photos are below</h3>
+                <p>Click any photo to view it full size. Use the "Download All" button above to get everything at once, or download individual photos.</p>
+            </div>
+
+            <div class="gallery-grid" id="gallery-grid"></div>
+
+            <!-- Rating Section -->
+            <div class="rating-section" id="rating-section">
+                <div style="font-size:2.5rem;margin-bottom:16px">⭐</div>
+                <h2>How was your experience?</h2>
+                <p>Rate your photographer and leave a review to help others</p>
+                <div id="rating-content">
+                    <div class="star-rating-large" id="star-rating">
+                        <span class="star-large" data-val="1">★</span>
+                        <span class="star-large" data-val="2">★</span>
+                        <span class="star-large" data-val="3">★</span>
+                        <span class="star-large" data-val="4">★</span>
+                        <span class="star-large" data-val="5">★</span>
+                    </div>
+                    <div id="rating-label" style="color:rgba(255,255,255,0.4);font-size:0.9rem;margin-bottom:20px">Select a rating</div>
+                    <div class="rating-form">
+                        <textarea id="review-text" placeholder="Share your experience with this photographer... (optional)"></textarea>
+                        <button class="rating-submit" onclick="submitRating()" id="rating-btn" disabled>
+              <i class="fas fa-paper-plane"></i> Submit Rating
+            </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox-client" id="lightbox">
+        <div class="lb-info" id="lb-info"></div>
+        <button class="lb-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+        <button class="lb-nav lb-prev" onclick="lbNav(-1)"><i class="fas fa-chevron-left"></i></button>
+        <img id="lb-img" src="" alt="" />
+        <button class="lb-nav lb-next" onclick="lbNav(1)"><i class="fas fa-chevron-right"></i></button>
+        <button class="lb-download" onclick="downloadImage(currentImages[lbIndex].id, currentImages[lbIndex].original_name)">
+      <i class="fas fa-download"></i> Download This Photo
+    </button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        const token = location.pathname.split('/').pop();
+        let currentImages = [];
+        let lbIndex = 0;
+        let selectedRating = 0;
+        const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent!'];
+
+        async function loadGallery() {
+            try {
+                const res = await fetch(`/api/gallery/${token}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                currentImages = data.images || [];
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('gallery-content').classList.remove('hidden');
+
+                // Set hero info
+                const initials = data.photographer_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                document.getElementById('photo-avatar').textContent = initials;
+                document.getElementById('photo-name').textContent = data.photographer_name;
+                document.getElementById('gallery-title').textContent = `${data.client_name}'s Photos Are Ready! 🎉`;
+                document.title = `${data.client_name}'s Photos — SnapVault`;
+
+                if (data.avgRating) {
+                    const badge = document.getElementById('photo-rating-badge');
+                    badge.textContent = `★ ${data.avgRating}`;
+                    badge.style.display = 'inline';
+                }
+
+                const total = currentImages.length;
+                const downloaded = currentImages.filter(i => i.is_downloaded).length;
+                document.getElementById('stat-total').textContent = total;
+                document.getElementById('stat-downloaded').textContent = downloaded;
+                document.getElementById('stat-remaining').textContent = total - downloaded;
+
+                renderGallery();
+
+                // Check if already rated
+                if (data.avgRating && data.ratingCount > 0) {
+                    document.getElementById('rating-content').innerHTML = `
+            <div style="text-align:center;padding:20px">
+              <div style="font-size:3rem;margin-bottom:12px">${'★'.repeat(Math.round(data.avgRating))}</div>
+              <h3 style="color:white;margin-bottom:8px">Thank you for your rating!</h3>
+              <p style="color:rgba(255,255,255,0.5)">You rated this photographer <strong style="color:#F6C90E">${data.avgRating}/5</strong></p>
+            </div>`;
+                }
+            } catch (e) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-state').classList.remove('hidden');
+                document.getElementById('error-msg').textContent = e.message;
+            }
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('gallery-grid');
+            if (!currentImages.length) {
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:rgba(255,255,255,0.4)">
+          <div style="font-size:3rem;margin-bottom:12px">📷</div>
+          <p>No photos in this gallery yet.</p>
+        </div>`;
+                return;
+            }
+            grid.innerHTML = currentImages.map((img, idx) => `
+        <div class="gallery-item" onclick="openLightbox(${idx})">
+          <img src="${img.url}" alt="${img.original_name}" loading="lazy" />
+          <div class="gallery-item-overlay">
+            <div class="gallery-item-name">${img.original_name}</div>
+            <button class="gallery-item-download" onclick="event.stopPropagation();downloadImage(${img.id},'${img.original_name}')">
+              <i class="fas fa-download"></i> Download
+            </button>
+          </div>
+          ${img.is_downloaded ? `<div class="downloaded-badge"><i class="fas fa-check"></i></div>` : ''}
+        </div>`).join('');
+    }
+
+    function getGalleryId() {
+      // We'll need to store the folder id from the API response
+      return window._galleryFolderId || '';
+    }
+
+    // Re-load with folder id stored
+    async function loadGalleryFull() {
+      try {
+        const res = await fetch(`/api/gallery/${token}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        window._galleryFolderId = data.id;
+        currentImages = data.images || [];
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('gallery-content').classList.remove('hidden');
+
+        const initials = data.photographer_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        document.getElementById('photo-avatar').textContent = initials;
+        document.getElementById('photo-name').textContent = data.photographer_name;
+        document.getElementById('gallery-title').textContent = `${data.client_name}'s Photos Are Ready! 🎉`;
+        document.title = `${data.client_name}'s Photos — SnapVault`;
+
+        if (data.avgRating) {
+          const badge = document.getElementById('photo-rating-badge');
+          badge.textContent = `★ ${data.avgRating}`;
+          badge.style.display = 'inline';
+        }
+
+        const total = currentImages.length;
+        const downloaded = currentImages.filter(i => i.is_downloaded).length;
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-downloaded').textContent = downloaded;
+        document.getElementById('stat-remaining').textContent = total - downloaded;
+
+        renderGallery();
+
+        if (data.ratingCount > 0) {
+          document.getElementById('rating-content').innerHTML = `
+            <div style="padding:20px">
+              <div style="font-size:3rem;margin-bottom:12px">${'★'.repeat(Math.round(data.avgRating))}</div>
+              <h3 style="color:white;margin-bottom:8px">Thank you for your rating!</h3>
+              <p style="color:rgba(255,255,255,0.5)">You rated this photographer <strong style="color:#F6C90E">${data.avgRating}/5</strong></p>
+            </div>`;
+        }
+      } catch (e) {
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('error-state').classList.remove('hidden');
+        document.getElementById('error-msg').textContent = e.message;
+      }
+    }
+
+    function openLightbox(idx) {
+      lbIndex = idx;
+      const img = currentImages[idx];
+      document.getElementById('lb-img').src = img.url;
+      document.getElementById('lb-info').textContent = `${idx + 1} / ${currentImages.length}`;
+      document.getElementById('lightbox').classList.add('active');
+    }
+
+    function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
+
+    function lbNav(dir) {
+      lbIndex = (lbIndex + dir + currentImages.length) % currentImages.length;
+      openLightbox(lbIndex);
+    }
+
+    document.getElementById('lightbox').addEventListener('click', e => {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    });
+
+    async function downloadImage(imageId, name) {
+      showToast(`Downloading ${name}...`, 'info');
+      const link = document.createElement('a');
+      link.href = `/api/gallery/${token}/image/${imageId}`;
+      link.download = name;
+      link.click();
+      // Update UI
+      setTimeout(() => {
+        const img = currentImages.find(i => i.id === imageId);
+        if (img) img.is_downloaded = true;
+        renderGallery();
+        const downloaded = currentImages.filter(i => i.is_downloaded).length;
+        document.getElementById('stat-downloaded').textContent = downloaded;
+        document.getElementById('stat-remaining').textContent = currentImages.length - downloaded;
+      }, 1000);
+    }
+
+    async function downloadAll() {
+      const btn = document.getElementById('download-all-btn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing ZIP...';
+      btn.disabled = true;
+      showToast('Preparing your photos for download...', 'info');
+      const link = document.createElement('a');
+      link.href = `/api/gallery/${token}/download-all`;
+      link.click();
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-download"></i> Download All Photos';
+        btn.disabled = false;
+        currentImages.forEach(i => i.is_downloaded = true);
+        renderGallery();
+        document.getElementById('stat-downloaded').textContent = currentImages.length;
+        document.getElementById('stat-remaining').textContent = 0;
+        showToast('All photos downloaded!', 'success');
+      }, 3000);
+    }
+
+    // Star rating
+    const stars = document.querySelectorAll('.star-large');
+    stars.forEach(star => {
+      star.addEventListener('mouseover', () => {
+        const val = parseInt(star.dataset.val);
+        stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.val) <= val));
+        document.getElementById('rating-label').textContent = ratingLabels[val];
+      });
+      star.addEventListener('mouseout', () => {
+        stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.val) <= selectedRating));
+        document.getElementById('rating-label').textContent = selectedRating ? ratingLabels[selectedRating] : 'Select a rating';
+      });
+      star.addEventListener('click', () => {
+        selectedRating = parseInt(star.dataset.val);
+        stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.val) <= selectedRating));
+        document.getElementById('rating-label').textContent = ratingLabels[selectedRating];
+        document.getElementById('rating-btn').disabled = false;
+      });
+    });
+
+    async function submitRating() {
+      if (!selectedRating) return;
+      const btn = document.getElementById('rating-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+      const review = document.getElementById('review-text').value;
+      try {
+        const res = await fetch(`/api/gallery/${token}/rate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating: selectedRating, review })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        document.getElementById('rating-content').innerHTML = `
+          <div style="padding:20px">
+            <div style="font-size:3rem;margin-bottom:12px">${'★'.repeat(selectedRating)}</div>
+            <h3 style="color:white;margin-bottom:8px">Thank you! 🙏</h3>
+            <p style="color:rgba(255,255,255,0.5)">Your ${selectedRating}-star rating has been submitted.</p>
+          </div>`;
+        showToast('Rating submitted! Thank you!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Rating';
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    loadGalleryFull();
+    </script>
+</body>
+
+</html>

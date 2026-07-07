@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapVault — Photographer Gallery Platform</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { background: var(--dark); color: white; overflow-x: hidden; }
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 80px 24px;
+      background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,101,132,0.1) 0%, transparent 70%);
+      bottom: -50px;
+      left: -50px;
+      border-radius: 50%;
+    }
+    .hero-content { text-align: center; max-width: 800px; position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(108,99,255,0.2);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: #A89CFF;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      color: white;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #6C63FF, #FF6584, #43D9AD);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.65);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.8;
+    }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .hero-btns .btn-primary { padding: 16px 40px; font-size: 1rem; }
+    .hero-btns .btn-outline { padding: 16px 40px; font-size: 1rem; border-color: rgba(255,255,255,0.3); color: white; }
+    .hero-btns .btn-outline:hover { background: rgba(255,255,255,0.1); color: white; }
+    .floating-cards {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .float-card {
+      position: absolute;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      color: white;
+      font-size: 0.8rem;
+      animation: float 6s ease-in-out infinite;
+    }
+    .float-card:nth-child(1) { top: 20%; left: 5%; animation-delay: 0s; }
+    .float-card:nth-child(2) { top: 30%; right: 5%; animation-delay: 2s; }
+    .float-card:nth-child(3) { bottom: 25%; left: 8%; animation-delay: 4s; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    .features { padding: 100px 24px; background: #F7F8FC; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; max-width: 1100px; margin: 0 auto; }
+    .feature-card {
+      background: white;
+      border-radius: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      border: 1px solid #E2E8F0;
+      transition: all 0.3s ease;
+    }
+    .feature-card:hover { transform: translateY(-8px); box-shadow: 0 16px 48px rgba(108,99,255,0.15); }
+    .feature-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 20px;
+    }
+    .feature-card h3 { color: #1A1A2E; margin-bottom: 10px; }
+    .feature-card p { color: #718096; font-size: 0.9rem; line-height: 1.7; }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-header h2 { color: #1A1A2E; margin-bottom: 12px; }
+    .section-header p { color: #718096; max-width: 500px; margin: 0 auto; }
+    .cta { padding: 100px 24px; background: linear-gradient(135deg, #1A1A2E, #0F3460); text-align: center; }
+    .cta h2 { color: white; margin-bottom: 16px; }
+    .cta p { color: rgba(255,255,255,0.6); margin-bottom: 40px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .footer {
+      background: #0F0F1A;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    .footer a { color: rgba(255,255,255,0.5); }
+    .nav-landing {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    .nav-landing .brand { display: flex; align-items: center; gap: 12px; color: white; font-size: 1.3rem; font-weight: 800; text-decoration: none; }
+    .nav-landing .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #6C63FF, #FF6584); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .nav-landing .nav-links { display: flex; gap: 8px; }
+    .nav-landing .nav-links a { color: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+    .nav-landing .nav-links a:hover { color: white; background: rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <nav class="nav-landing">
+      <a href="/" class="brand">
+        <div class="logo-icon">📸</div>
+        SnapVault
+      </a>
+      <div class="nav-links">
+        <a href="/login">Login</a>
+        <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
+      </div>
+    </nav>
+
+    <div class="floating-cards">
+      <div class="float-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="color:#43D9AD">✓</span> Gallery Shared
+        </div>
+        <div style="color:rgba(255,255,255,0.5);font-size:0.75rem">Client received link</div>
+      </div>
+      <div class="float-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          ⭐⭐⭐⭐⭐
+        </div>
+        <div style="color:rgba(255,255,255,0.5);font-size:0.75rem">5-star rating received</div>
+      </div>
+      <div class="float-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="color:#6C63FF">↓</span> 48 Photos Downloaded
+        </div>
+        <div style="color:rgba(255,255,255,0.5);font-size:0.75rem">Auto-cleanup done</div>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fas fa-camera"></i>
+        Professional Photographer Platform
+      </div>
+      <h1>Deliver Photos.<br /><span>Delight Clients.</span></h1>
+      <p>The all-in-one platform for photographers to share client galleries, collect ratings, and manage their workflow — beautifully.</p>
+      <div class="hero-btns">
+        <a href="/register" class="btn btn-primary btn-lg">
+          <i class="fas fa-rocket"></i> Start for Free
+        </a>
+        <a href="/login" class="btn btn-outline btn-lg">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="section-header">
+      <h2>Everything You Need</h2>
+      <p>A complete workflow from shooting to delivery, all in one place.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#EEF0FF,#D4D0FF)">📁</div>
+        <h3>Client Galleries</h3>
+        <p>Create named folders for each client, upload their photos, and share a private link or QR code instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#FFF0F5,#FFD0DC)">🔗</div>
+        <h3>Instant Sharing</h3>
+        <p>Share a unique link or QR code with your client. No login required — they just click and download.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#E8FFF3,#C0F5DC)">⭐</div>
+        <h3>Client Ratings</h3>
+        <p>After downloading, clients can rate your work. Build your reputation with authentic 5-star reviews.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#FFF9E6,#FFE9A0)">🗑️</div>
+        <h3>Auto-Cleanup</h3>
+        <p>Once all photos are downloaded, files are automatically deleted to save server space. Smart and efficient.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#E8F4FF,#C0DCFF)">📊</div>
+        <h3>Analytics Dashboard</h3>
+        <p>Track your performance with beautiful charts showing monthly, daily, and yearly photo delivery stats.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#F0F0FF,#D0CCFF)">🛡️</div>
+        <h3>Admin Control</h3>
+        <p>Full admin panel to monitor all photographers, manage accounts, view ratings, and send announcements.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <h2>Ready to Elevate Your Photography Business?</h2>
+    <p>Join photographers who trust SnapVault to deliver stunning galleries to their clients.</p>
+    <a href="/register" class="btn btn-primary btn-lg">
+      <i class="fas fa-camera"></i> Create Your Account
+    </a>
+  </section>
+
+  <footer class="footer">
+    <p>© 2024 SnapVault. Built for photographers, loved by clients.</p>
+  </footer>
+</body>
+</html>
