@@ -42,13 +42,15 @@ if (!adminExists) {
 const seededEmail = (process.env.SEED_USER_EMAIL || 'angazacode@gmail.com').toLowerCase();
 const seededPassword = process.env.SEED_USER_PASSWORD || '1054komic';
 const seededName = process.env.SEED_USER_NAME || 'Angaza';
-const seededUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1').get(seededEmail);
+const seededUser = db.prepare('SELECT id, role FROM users WHERE LOWER(email) = ? LIMIT 1').get(seededEmail);
 if (!seededUser) {
     const hash = bcrypt.hashSync(seededPassword, 10);
     db.prepare(`
     INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)
-  `).run(seededName, seededEmail, hash, 'user');
+  `).run(seededName, seededEmail, hash, 'photographer');
     console.log(`Seeded user created: ${seededEmail}`);
+} else if (seededUser.role !== 'photographer') {
+    db.prepare('UPDATE users SET role = ? WHERE id = ?').run('photographer', seededUser.id);
 }
 
 module.exports = db;

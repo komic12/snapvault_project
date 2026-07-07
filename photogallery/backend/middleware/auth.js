@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { verifyFirebaseToken, firebaseInitialized } = require('../firebase-admin');
 const { createClient } = require('@supabase/supabase-js');
+const { resolveAccountRole } = require('../utils/auth-role');
 const JWT_SECRET = process.env.JWT_SECRET || 'photogallery_secret_2024';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -27,7 +28,7 @@ async function authenticateToken(req, res, next) {
                 uid: decoded.uid,
                 email: decoded.email,
                 name: decoded.name || decoded.email || null,
-                role: (decoded.role || decoded.claims && decoded.claims.role) || decoded.role || 'user',
+                role: resolveAccountRole(decoded, 'photographer'),
                 firebase: true,
                 claims: decoded
             };
@@ -74,8 +75,9 @@ function requireAdmin(req, res, next) {
 }
 
 function requirePhotographer(req, res, next) {
-    if (req.user.role !== 'photographer') {
-        return res.status(403).json({ error: 'Photographer access required.' });
+    const role = (req.user && req.user.role) || '';
+    if (!['photographer', 'user', 'admin'].includes(role)) {
+        return res.status(403).json({ error: 'Access required.' });
     }
     next();
 }

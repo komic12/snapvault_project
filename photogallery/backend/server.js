@@ -29,7 +29,6 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/folders', require('./routes/folders'));
 app.use('/api/gallery', require('./routes/gallery'));
-app.use('/api/admin', require('./routes/admin'));
 
 initSupabase();
 
@@ -48,9 +47,7 @@ app.get('/supabase-config.js', (req, res) => {
 
 // Serve frontend pages
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/dashboard.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/login.html')));
-app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/register.html')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
 
 // 30-day reminder check (runs every hour)
